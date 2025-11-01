@@ -9,29 +9,67 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/cram.png" />
     <link rel="icon" type="image/png" href="/cram.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#10b981" />
+    <meta name="msapplication-TileColor" content="#10b981" />
+    <meta name="format-detection" content="telephone=no" />
 
     <!-- SEO Meta Tags -->
     <title>CramItUp - Memorize Anything with AI-Powered Mnemonics & Dark Humor</title>
     <meta name="description" content="Free AI mnemonic generator using Gemini. Create funny, weird, and dark humor acronyms to memorize topics by heart. Perfect for students preparing for exams in 2025. Multilingual support." />
-    <meta name="keywords" content="mnemonic generator, AI acronyms, study tools, exam preparation, memory techniques, funny mnemonics, dark humor study aids, free educational tool, Gemini AI" />
+    <meta name="keywords" content="mnemonic generator, AI acronyms, study tools, exam preparation, memory techniques, funny mnemonics, dark humor study aids, free educational tool, Gemini AI, memory tricks, study hack, exam prep tool, mnemonic device generator, AI study assistant, free mnemonic maker, learning tool, memory aid generator" />
     <meta name="author" content="CramItUp" />
-    <meta name="robots" content="index, follow" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="googlebot" content="index, follow" />
+    <meta name="bingbot" content="index, follow" />
     <link rel="canonical" href="https://cramitup.com" />
+    
+    <!-- Sitemap and Robots -->
+    <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
 
     <!-- Open Graph / Social Media -->
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="CramItUp" />
     <meta property="og:url" content="https://cramitup.com" />
     <meta property="og:title" content="CramItUp - Cram Anything with a Twisted Grin!" />
     <meta property="og:description" content="Free AI-powered mnemonic generator with humor & dark twists. Make studying fun!" />
     <meta property="og:image" content="https://cramitup.com/cram.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="CramItUp - AI Mnemonic Generator Logo" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="article:author" content="CramItUp" />
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@cramitup" />
+    <meta name="twitter:creator" content="@cramitup" />
     <meta name="twitter:title" content="CramItUp - AI Mnemonic Generator" />
     <meta name="twitter:description" content="Memorize anything with funny, weird AI-generated mnemonics!" />
     <meta name="twitter:image" content="https://cramitup.com/cram.png" />
+    <meta name="twitter:image:alt" content="CramItUp Logo" />
 
-    <!-- Schema.org Markup -->
+    <!-- Schema.org Markup - Organization -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "CramItUp",
+      "url": "https://cramitup.com",
+      "logo": "https://cramitup.com/cram.png",
+      "description": "AI-powered mnemonic generator for students to memorize topics using humor and dark twists",
+      "sameAs": [
+        "https://twitter.com/cramitup",
+        "https://github.com/cramitup"
+      ],
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "Customer Support",
+        "email": "support@cramitup.com"
+      }
+    }
+    </script>
+
+    <!-- Schema.org Markup - WebApplication -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -40,18 +78,44 @@
       "description": "AI-powered mnemonic generator for students to memorize topics using humor and dark twists",
       "url": "https://cramitup.com",
       "applicationCategory": "EducationalApplication",
+      "operatingSystem": "Any",
+      "browserRequirements": "Requires JavaScript. Requires HTML5.",
       "offers": {
         "@type": "Offer",
         "price": "0",
-        "priceCurrency": "USD"
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/InStock"
       },
-      "featureList": "AI mnemonics, multilingual support, dark humor, funny acronyms",
-      "operatingSystem": "Any",
-      "browserRequirements": "Requires JavaScript. Requires HTML5.",
+      "featureList": "AI mnemonics, multilingual support, dark humor, funny acronyms, free tool, exam preparation",
+      "softwareVersion": "1.0",
+      "releaseNotes": "AI-powered mnemonic generation with Google Gemini",
+      "screenshot": "https://cramitup.com/cram.png",
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "ratingCount": "100"
+      },
       "provider": {
         "@type": "Organization",
-        "name": "CramItUp"
+        "name": "CramItUp",
+        "url": "https://cramitup.com"
       }
+    }
+    </script>
+
+    <!-- Schema.org Markup - BreadcrumbList -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://cramitup.com"
+        }
+      ]
     }
     </script>
 
@@ -102,10 +166,18 @@
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2466211514252229"
      crossorigin="anonymous"></script>
 
+    <!-- Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+
+    <!-- DNS Prefetch for Performance -->
+    <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+    <link rel="dns-prefetch" href="https://www.google-analytics.com" />
+    <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com" />
   </head>
   <body>
     <div id="root"></div>

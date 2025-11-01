@@ -1,0 +1,45 @@
+# robots.txt for CramItUp
+# https://cramitup.com/robots.txt
+
+User-agent: *
+Allow: /
+
+# Disallow admin or private paths if any
+# Disallow: /admin
+# Disallow: /api/
+
+# Sitemap location
+Sitemap: https://cramitup.com/sitemap.xml
+
+# Crawl-delay (optional, helps prevent overwhelming the server)
+Crawl-delay: 1
+
+# Allow all major search engines
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Slurp
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
+User-agent: Baiduspider
+Allow: /
+
+User-agent: YandexBot
+Allow: /
+
+# Allow social media crawlers
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
+
