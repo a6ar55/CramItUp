@@ -1,104 +1,32 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import {
+  sanitizeInput,
+  validateTopic,
+  validateLanguage,
+  validateOutput,
+  logSecurityEvent,
+  buildSecurePrompt
+} from './security.js';
 
 // Initialize Gemini AI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// Input sanitization
-function sanitizeInput(text) {
-  return text.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-    .trim()
-    .substring(0, 500);
-}
-
-// Few-shot prompting strategy with JSON output
-function buildPrompt(topic, language) {
-  return `You are a creative mnemonic generator that helps students memorize topics using acronyms, shortcuts, and mnemonics. Your specialty is making mnemonics HIGHLY memorable by incorporating humor, funny elements, dark humor, and weird/unconventional twists.
-
-Topic: ${topic}
-Language: ${language}
-
-Generate mnemonics and respond with ONLY valid JSON in this exact format:
-
-{
-  "primary": {
-    "mnemonic": "The main mnemonic sentence with emojis",
-    "breakdown": [
-      {"letter": "First letter/word", "represents": "What it stands for"}
-    ],
-    "explanation": "Why this twist makes it memorable"
-  },
-  "alternatives": [
-    {"mnemonic": "First alternative with emojis"},
-    {"mnemonic": "Second alternative with emojis"}
-  ]
-}
-
-IMPORTANT:
-1. Make the PRIMARY mnemonic FUNNY, DARK, or WEIRD to be unforgettable
-2. Use emojis liberally to make it visual
-3. The weirder and more unconventional, the better - students remember bizarre things!
-4. Include dark humor if appropriate (nothing offensive, just quirky)
-5. Breakdown should match the letters/words in the mnemonic
-6. Provide 2 alternative mnemonics with different styles
-7. Keep it appropriate for students but push creative boundaries
-8. Respond ONLY with the JSON object, no additional text
-
-Examples of the style we want:
-
-Example 1 (Planets from Sun):
-{
-  "primary": {
-    "mnemonic": "My Very Evil Mother Just Served Us Nachos 🌮👹",
-    "breakdown": [
-      {"letter": "M", "represents": "Mercury"},
-      {"letter": "V", "represents": "Venus"},
-      {"letter": "E", "represents": "Earth"},
-      {"letter": "M", "represents": "Mars"},
-      {"letter": "J", "represents": "Jupiter"},
-      {"letter": "S", "represents": "Saturn"},
-      {"letter": "U", "represents": "Uranus"},
-      {"letter": "N", "represents": "Neptune"}
-    ],
-    "explanation": "The image of an evil mother serving nachos is so absurd and dark-humored that it sticks in your mind forever! 😈"
-  },
-  "alternatives": [
-    {"mnemonic": "My Vampire Eats Many Juicy Steaks, Ugh! Nasty! 🧛‍♂️🥩"},
-    {"mnemonic": "Most Vicious Eagles Make Jumps Successfully, Unlike Newbies 🦅"}
-  ]
-}
-
-Example 2 (Tamil - Continents):
-{
-  "primary": {
-    "mnemonic": "அம்மா அழுது நாள் எல்லாம் ஆசை அழகு 😭💔",
-    "breakdown": [
-      {"letter": "அ", "represents": "ஆசியா (Asia)"},
-      {"letter": "ஆ", "represents": "ஆப்பிரிக்கா (Africa)"},
-      {"letter": "ந", "represents": "வடஅமெரிக்கா (North America)"},
-      {"letter": "தெ", "represents": "தெற்கு அமெரிக்கா (South America)"},
-      {"letter": "ஐ", "represents": "ஐரோப்பா (Europe)"},
-      {"letter": "அ", "represents": "அண்டார்டிகா (Antarctica)"},
-      {"letter": "ஆ", "represents": "ஆஸ்திரேலியா (Australia)"}
-    ],
-    "explanation": "தாயின் கண்ணீரை நினைத்தால் உலகின் அனைத்து கண்டங்களும் நினைவில் வரும்! உணர்ச்சி மிகுந்த கதை!"
-  },
-  "alternatives": [
-    {"mnemonic": "அன்பு ஆனந்தம் நல்ல தேநீர் ஏழை அழகு ஆடை 🍵✨"},
-    {"mnemonic": "அரசன் ஆவேசம் நகரம் தெரு ஐயோ அச்சம் ஆபத்து 👑⚔️"}
-  ]
-}
-
-Now generate for the given topic in ${language}.`;
-}
 
 export default async function handler(req, res) {
+  const startTime = Date.now();
+
+  // Set security headers
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader(
     'Access-Control-Allow-Headers',
-    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+    'Content-Type, X-Requested-With'
   );
 
   // Handle OPTIONS request
@@ -113,38 +41,78 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { topic, language } = req.body;
+    const { topic, language = 'English' } = req.body;
 
-    if (!topic || !language) {
-      return res.status(400).json({
-        error: 'Missing required fields: topic and language'
+    // Validate topic
+    const topicValidation = validateTopic(topic);
+    if (!topicValidation.isValid) {
+      logSecurityEvent('invalid_topic', {
+        topic,
+        error: topicValidation.error,
+        ip: req.headers['x-forwarded-for'] || req.socket.remoteAddress
       });
+      return res.status(400).json({ error: topicValidation.error });
     }
 
+    // Validate language
+    const languageValidation = validateLanguage(language);
+    if (!languageValidation.isValid) {
+      return res.status(400).json({ error: languageValidation.error });
+    }
+
+    // Sanitize input
     const sanitizedTopic = sanitizeInput(topic);
 
     console.log('\n📝 Generating mnemonic for:', sanitizedTopic);
     console.log('🌍 Language:', language);
 
-    const prompt = buildPrompt(sanitizedTopic, language);
+    // Build secure prompt
+    const prompt = buildSecurePrompt(sanitizedTopic, language);
 
+    // Call Gemini API with safety settings
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.0-flash-exp',
       generationConfig: {
         temperature: 1,
         topP: 0.95,
         topK: 64,
         maxOutputTokens: 8192,
-      }
+      },
+      safetySettings: [
+        {
+          category: 'HARM_CATEGORY_HARASSMENT',
+          threshold: 'BLOCK_MEDIUM_AND_ABOVE',
+        },
+        {
+          category: 'HARM_CATEGORY_HATE_SPEECH',
+          threshold: 'BLOCK_MEDIUM_AND_ABOVE',
+        },
+        {
+          category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+          threshold: 'BLOCK_MEDIUM_AND_ABOVE',
+        },
+        {
+          category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
+          threshold: 'BLOCK_MEDIUM_AND_ABOVE',
+        },
+      ],
     });
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const generatedText = response.text();
 
+    // Validate output for security
+    if (!validateOutput(generatedText)) {
+      logSecurityEvent('invalid_output', {
+        topic: sanitizedTopic,
+        outputLength: generatedText.length
+      });
+      throw new Error('Output validation failed');
+    }
+
     console.log('\n🤖 Raw API Response:');
-    console.log(generatedText);
-    console.log('\n---\n');
+    console.log(generatedText.substring(0, 200) + '...');
 
     // Parse JSON response
     let mnemonicData;
@@ -166,13 +134,28 @@ export default async function handler(req, res) {
       }
     } catch (parseError) {
       console.error('JSON Parse Error:', parseError);
-      console.error('Failed text:', generatedText);
-
-      return res.status(500).json({
-        error: 'Failed to parse AI response',
-        details: parseError.message
-      });
+      
+      // Try to extract JSON from the text
+      const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          mnemonicData = JSON.parse(jsonMatch[0]);
+        } catch (e) {
+          return res.status(500).json({
+            error: 'Failed to parse AI response',
+            details: parseError.message
+          });
+        }
+      } else {
+        return res.status(500).json({
+          error: 'Failed to parse AI response',
+          details: parseError.message
+        });
+      }
     }
+
+    const duration = Date.now() - startTime;
+    console.log(`⏱️ Request completed in ${duration}ms`);
 
     res.status(200).json({
       success: true,
@@ -183,8 +166,29 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('Error generating mnemonic:', error);
+    
+    // Log security-relevant errors
+    logSecurityEvent('generation_error', {
+      error: error.message,
+      ip: req.headers['x-forwarded-for'] || req.socket.remoteAddress,
+      timestamp: new Date().toISOString()
+    });
+
+    // Handle API errors gracefully
+    if (error.message?.includes('API key')) {
+      return res.status(500).json({
+        error: 'Oops! API configuration issue. Please check the setup. 🔧'
+      });
+    }
+
+    if (error.message?.includes('safety')) {
+      return res.status(400).json({
+        error: 'Content blocked by safety filters. Please try a different topic. 🛡️'
+      });
+    }
+
     res.status(500).json({
-      error: 'Failed to generate mnemonic',
+      error: 'Try again—Gemini is taking a nap! 😴',
       message: error.message
     });
   }

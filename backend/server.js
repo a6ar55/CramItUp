@@ -3,135 +3,144 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import rateLimit from 'express-rate-limit';
+import {
+  sanitizeInput,
+  validateTopic,
+  validateLanguage,
+  validateOutput,
+  rateLimitConfig,
+  logSecurityEvent,
+  buildSecurePrompt
+} from './security.js';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Validate environment variables
+if (!process.env.GEMINI_API_KEY) {
+  console.error('❌ GEMINI_API_KEY is not set in environment variables!');
+  process.exit(1);
+}
+
 // Initialize Gemini AI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// Middleware
-app.use(cors());
-app.use(express.json());
-
-// Rate limiting to prevent abuse
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 30, // limit each IP to 30 requests per windowMs
-  message: 'Too many requests from this IP, please try again later! 😴'
+// Security headers middleware
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  next();
 });
 
-app.use('/api/', limiter);
+// CORS configuration
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? ['https://cramitup.com', 'https://www.cramitup.com']
+    : '*',
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
-// Input sanitization
-function sanitizeInput(text) {
-  // Remove any potentially harmful characters
-  return text.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-    .trim()
-    .substring(0, 500); // Enforce max 500 chars
-}
+// Body parser with size limits
+app.use(express.json({ limit: '10kb' }));
 
-// Few-shot prompting strategy with JSON output
-function buildPrompt(topic, language) {
-  return `You are a creative mnemonic generator that helps students memorize topics using acronyms, shortcuts, and mnemonics. Your specialty is making mnemonics HIGHLY memorable by incorporating humor, funny elements, dark humor, and weird/unconventional twists.
+// Rate limiting to prevent abuse
+const standardLimiter = rateLimit(rateLimitConfig.standard);
+const feedbackLimiter = rateLimit(rateLimitConfig.feedback);
 
-Topic: ${topic}
-Language: ${language}
+app.use('/api/generate', standardLimiter);
+app.use('/api/feedback', feedbackLimiter);
 
-Generate mnemonics and respond with ONLY valid JSON in this exact format:
-
-{
-  "primary": {
-    "mnemonic": "The main mnemonic sentence with emojis",
-    "breakdown": [
-      {"letter": "First letter/word", "represents": "What it stands for"}
-    ],
-    "explanation": "Why this twist makes it memorable"
-  },
-  "alternatives": [
-    {"mnemonic": "First alternative with emojis"},
-    {"mnemonic": "Second alternative with emojis"}
-  ]
-}
-
-Requirements:
-1. Use the FIRST LETTERS or KEY WORDS from the topic to build acronyms
-2. Add humor, dark humor, or weird/absurd elements to boost memorability
-3. Include emojis for visual appeal (minimum 2 per mnemonic)
-4. Make the twist shocking, funny, or absurd
-5. Be culturally sensitive while maintaining creativity
-6. Output in ${language} language
-7. IMPORTANT: Return ONLY the JSON object, no other text
-
-Example for "Planets from Sun":
-{
-  "primary": {
-    "mnemonic": "My Very Evil Mother Just Served Us Nachos... but poisoned them! 💀🌮",
-    "breakdown": [
-      {"letter": "M", "represents": "Mercury"},
-      {"letter": "V", "represents": "Venus"},
-      {"letter": "E", "represents": "Earth"},
-      {"letter": "M", "represents": "Mars"},
-      {"letter": "J", "represents": "Jupiter"},
-      {"letter": "S", "represents": "Saturn"},
-      {"letter": "U", "represents": "Uranus"},
-      {"letter": "N", "represents": "Neptune"}
-    ],
-    "explanation": "The dark twist of poisoned nachos adds shock value, making the acronym unforgettable. Your brain remembers weird + danger!"
-  },
-  "alternatives": [
-    {"mnemonic": "Mad Vikings Eat Many Juicy Strawberries Under Nightfall 🍓🌙"},
-    {"mnemonic": "My Vampire Eats Marshmallows Joyfully, Surprising Unwary Neighbors 🧛‍♂️"}
-  ]
-}
-
-Now generate for: ${topic}`;
-}
+// Request logging middleware for security monitoring
+app.use('/api/', (req, res, next) => {
+  console.log(`📊 ${req.method} ${req.path}`, {
+    ip: req.ip,
+    timestamp: new Date().toISOString()
+  });
+  next();
+});
 
 // API endpoint for generating mnemonics
 app.post('/api/generate', async (req, res) => {
+  const startTime = Date.now();
+  
   try {
     const { topic, language = 'English' } = req.body;
 
-    // Validate input
-    if (!topic || topic.trim().length === 0) {
-      return res.status(400).json({
-        error: 'Please enter a topic to memorize! 🤔'
+    // Validate topic
+    const topicValidation = validateTopic(topic);
+    if (!topicValidation.isValid) {
+      logSecurityEvent('invalid_topic', {
+        topic,
+        error: topicValidation.error,
+        ip: req.ip
       });
+      return res.status(400).json({ error: topicValidation.error });
     }
 
-    if (topic.length > 500) {
-      return res.status(400).json({
-        error: 'Topic is too long! Keep it under 500 characters. ✂️'
-      });
+    // Validate language
+    const languageValidation = validateLanguage(language);
+    if (!languageValidation.isValid) {
+      return res.status(400).json({ error: languageValidation.error });
     }
 
+    // Sanitize input
     const sanitizedTopic = sanitizeInput(topic);
-    const prompt = buildPrompt(sanitizedTopic, language);
 
     console.log('\n📝 Generating mnemonic for:', sanitizedTopic);
     console.log('🌍 Language:', language);
 
-    // Call Gemini API
+    // Build secure prompt
+    const prompt = buildSecurePrompt(sanitizedTopic, language);
+
+    // Call Gemini API with safety settings
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.0-flash-exp',
       generationConfig: {
         temperature: 1,
         topP: 0.95,
         topK: 64,
         maxOutputTokens: 8192,
-      }
+      },
+      safetySettings: [
+        {
+          category: 'HARM_CATEGORY_HARASSMENT',
+          threshold: 'BLOCK_MEDIUM_AND_ABOVE',
+        },
+        {
+          category: 'HARM_CATEGORY_HATE_SPEECH',
+          threshold: 'BLOCK_MEDIUM_AND_ABOVE',
+        },
+        {
+          category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+          threshold: 'BLOCK_MEDIUM_AND_ABOVE',
+        },
+        {
+          category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
+          threshold: 'BLOCK_MEDIUM_AND_ABOVE',
+        },
+      ],
     });
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const generatedText = response.text();
 
+    // Validate output for security
+    if (!validateOutput(generatedText)) {
+      logSecurityEvent('invalid_output', {
+        topic: sanitizedTopic,
+        outputLength: generatedText.length
+      });
+      throw new Error('Output validation failed');
+    }
+
     console.log('\n🤖 Raw API Response:');
-    console.log(generatedText);
-    console.log('\n---\n');
+    console.log(generatedText.substring(0, 200) + '...');
 
     // Try to parse JSON from the response
     let mnemonicData;
@@ -165,6 +174,9 @@ app.post('/api/generate', async (req, res) => {
       }
     }
 
+    const duration = Date.now() - startTime;
+    console.log(`⏱️ Request completed in ${duration}ms`);
+
     res.json({
       success: true,
       data: mnemonicData,
@@ -175,10 +187,23 @@ app.post('/api/generate', async (req, res) => {
   } catch (error) {
     console.error('Error generating mnemonic:', error);
 
+    // Log security-relevant errors
+    logSecurityEvent('generation_error', {
+      error: error.message,
+      ip: req.ip,
+      timestamp: new Date().toISOString()
+    });
+
     // Handle API errors gracefully
     if (error.message?.includes('API key')) {
       return res.status(500).json({
         error: 'Oops! API configuration issue. Please check the setup. 🔧'
+      });
+    }
+
+    if (error.message?.includes('safety')) {
+      return res.status(400).json({
+        error: 'Content blocked by safety filters. Please try a different topic. 🛡️'
       });
     }
 
@@ -193,10 +218,28 @@ app.post('/api/feedback', async (req, res) => {
   try {
     const { rating, topic } = req.body;
 
-    // In a real app, you'd store this in a database
-    // For now, just log it
-    console.log('Feedback received:', { rating, topic, timestamp: new Date() });
+    // Validate feedback
+    if (!rating || !['up', 'down'].includes(rating)) {
+      return res.status(400).json({ error: 'Invalid rating' });
+    }
 
+    if (topic && typeof topic === 'string') {
+      const sanitizedTopic = sanitizeInput(topic);
+      console.log('Feedback received:', { 
+        rating, 
+        topic: sanitizedTopic, 
+        timestamp: new Date().toISOString(),
+        ip: req.ip
+      });
+    } else {
+      console.log('Feedback received:', { 
+        rating, 
+        timestamp: new Date().toISOString(),
+        ip: req.ip
+      });
+    }
+
+    // In a real app, store this in a database
     res.json({ success: true, message: 'Thanks for your feedback! 🙏' });
   } catch (error) {
     console.error('Error recording feedback:', error);
