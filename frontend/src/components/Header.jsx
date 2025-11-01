@@ -1,4 +1,4 @@
-import { FaBrain, FaMoon, FaSun } from 'react-icons/fa'
+import { FaMoon, FaSun } from 'react-icons/fa'
 
 function Header({ darkMode, toggleDarkMode }) {
   return (
@@ -6,7 +6,7 @@ function Header({ darkMode, toggleDarkMode }) {
       <div className="container mx-auto px-4 py-6 max-w-4xl">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <FaBrain className="text-5xl animate-pulse-slow float-animation" aria-label="Brain icon" />
+            <img src="/cram.png" alt="CramItUp Logo" className="w-48 h-48 md:w-60 md:h-60 animate-pulse-slow float-animation" />
             <div>
               <h1 className="text-4xl md:text-5xl font-poppins font-extrabold tracking-tight">
                 CramItUp
