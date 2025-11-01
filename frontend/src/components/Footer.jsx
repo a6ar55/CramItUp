@@ -21,14 +21,17 @@ function Footer() {
           </p>
         </div>
 
-        {/* Ad Placeholder */}
-        <div className="bg-gray-200 dark:bg-gray-700 border-2 border-dashed border-gray-400 dark:border-gray-500 rounded-lg p-8 mb-6 text-center">
-          <p className="text-gray-500 dark:text-gray-400 font-semibold">
-            Ad Space - Google AdSense
-          </p>
-          <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-            (Add your AdSense code here)
-          </p>
+        {/* Google AdSense */}
+        <div className="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg p-4 mb-6">
+          <ins className="adsbygoogle"
+               style={{ display: 'block' }}
+               data-ad-client="ca-pub-2466211514252229"
+               data-ad-slot="auto"
+               data-ad-format="auto"
+               data-full-width-responsive="true"></ins>
+          <script>
+            (adsbygoogle = window.adsbygoogle || []).push({});
+          </script>
         </div>
 
         {/* Footer Links */}
