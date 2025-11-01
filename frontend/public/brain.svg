@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <defs>
+    <linearGradient id="brainGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4CAF50;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2E7D32;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Brain shape -->
+  <path d="M50 10 C30 10 15 25 15 40 C15 45 16 49 18 53 C12 55 8 61 8 68 C8 77 15 84 24 84 C25 84 26 84 27 83 C30 90 37 95 45 95 C48 95 51 94 54 93 C57 94 60 95 63 95 C71 95 78 90 81 83 C82 84 83 84 84 84 C93 84 100 77 100 68 C100 61 96 55 90 53 C92 49 93 45 93 40 C93 25 78 10 58 10 C56 10 54 10 52 11 C51 10 50 10 50 10 Z"
+        fill="url(#brainGradient)" stroke="#2E7D32" stroke-width="2"/>
+
+  <!-- Brain details -->
+  <path d="M35 30 Q40 25 45 30 T55 30" fill="none" stroke="#2E7D32" stroke-width="2" stroke-linecap="round"/>
+  <path d="M60 35 Q65 30 70 35" fill="none" stroke="#2E7D32" stroke-width="2" stroke-linecap="round"/>
+  <path d="M30 50 Q35 45 40 50" fill="none" stroke="#2E7D32" stroke-width="2" stroke-linecap="round"/>
+  <path d="M65 50 Q70 45 75 50" fill="none" stroke="#2E7D32" stroke-width="2" stroke-linecap="round"/>
+  <path d="M40 65 Q45 60 50 65 T60 65" fill="none" stroke="#2E7D32" stroke-width="2" stroke-linecap="round"/>
+</svg>
