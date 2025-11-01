@@ -58,7 +58,7 @@ function Footer() {
             </a>
             <span>•</span>
             <a
-              href="https://github.com/yourusername/cramitup"
+              href="https://github.com/a6ar55/cramitup"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1 hover:text-primary transition-colors duration-300"
