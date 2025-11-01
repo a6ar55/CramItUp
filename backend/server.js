@@ -98,13 +98,14 @@ app.post('/api/generate', async (req, res) => {
     const prompt = buildSecurePrompt(sanitizedTopic, language);
 
     // Call Gemini API with safety settings
+    // Using optimized config for faster responses
     const model = genAI.getGenerativeModel({
       model: 'gemini-2.0-flash-exp',
       generationConfig: {
         temperature: 1,
         topP: 0.95,
         topK: 64,
-        maxOutputTokens: 8192,
+        maxOutputTokens: 2048, // Reduced from 8192 for faster responses
       },
       safetySettings: [
         {

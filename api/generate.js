@@ -70,13 +70,14 @@ export default async function handler(req, res) {
     const prompt = buildSecurePrompt(sanitizedTopic, language);
 
     // Call Gemini API with safety settings
+    // Using optimized config for faster responses
     const model = genAI.getGenerativeModel({
       model: 'gemini-2.0-flash-exp',
       generationConfig: {
         temperature: 1,
         topP: 0.95,
         topK: 64,
-        maxOutputTokens: 8192,
+        maxOutputTokens: 2048, // Reduced from 8192 for faster responses
       },
       safetySettings: [
         {
@@ -98,9 +99,28 @@ export default async function handler(req, res) {
       ],
     });
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const generatedText = response.text();
+    // Generate content with timeout protection
+    const timeoutMs = 50000; // 50 seconds (leaving buffer before 60s limit)
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Request timeout - AI response took too long')), timeoutMs);
+    });
+
+    let result, response, generatedText;
+    try {
+      result = await Promise.race([
+        model.generateContent(prompt),
+        timeoutPromise
+      ]);
+      response = await result.response;
+      generatedText = response.text();
+    } catch (timeoutError) {
+      if (timeoutError.message.includes('timeout')) {
+        return res.status(504).json({
+          error: 'AI response took too long. Please try again with a simpler topic! ⏱️'
+        });
+      }
+      throw timeoutError;
+    }
 
     // Validate output for security
     if (!validateOutput(generatedText)) {
@@ -184,6 +204,12 @@ export default async function handler(req, res) {
     if (error.message?.includes('safety')) {
       return res.status(400).json({
         error: 'Content blocked by safety filters. Please try a different topic. 🛡️'
+      });
+    }
+
+    if (error.message?.includes('timeout') || error.code === 'ETIMEDOUT') {
+      return res.status(504).json({
+        error: 'Request timed out. The AI is taking too long to respond. Please try again! ⏱️'
       });
     }
 
