@@ -5,18 +5,28 @@
         http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd"
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   
-  <!-- Main homepage -->
+  <!-- Main homepage - Highest priority -->
   <url>
     <loc>https://cramitup.com</loc>
-    <lastmod>2025-01-27</lastmod>
-    <changefreq>weekly</changefreq>
+    <lastmod>2025-11-01</lastmod>
+    <changefreq>daily</changefreq>
     <priority>1.0</priority>
     <image:image>
       <image:loc>https://cramitup.com/cram.png</image:loc>
       <image:title>CramItUp - AI Mnemonic Generator Logo</image:title>
-      <image:caption>CramItUp brain logo with educational symbols</image:caption>
+      <image:caption>CramItUp brain logo with educational symbols - AI-powered mnemonic generator for students</image:caption>
     </image:image>
   </url>
+
+  <!-- Additional pages if you add them in the future -->
+  <!-- Example structure for future pages:
+  <url>
+    <loc>https://cramitup.com/about</loc>
+    <lastmod>2025-11-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  -->
 
 </urlset>
 

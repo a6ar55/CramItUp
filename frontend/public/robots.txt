@@ -1,15 +1,20 @@
 # robots.txt for CramItUp
 # https://cramitup.com/robots.txt
+# Last updated: 2025-11-01
 
 User-agent: *
 Allow: /
 
+# Disallow API endpoints (not for indexing)
+Disallow: /api/
+
 # Disallow admin or private paths if any
 # Disallow: /admin
-# Disallow: /api/
+# Disallow: /private/
 
 # Sitemap location
 Sitemap: https://cramitup.com/sitemap.xml
+Sitemap: https://www.cramitup.com/sitemap.xml
 
 # Crawl-delay (optional, helps prevent overwhelming the server)
 Crawl-delay: 1
